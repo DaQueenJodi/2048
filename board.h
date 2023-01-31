@@ -4,7 +4,11 @@
 #define BOARD_SIZEH 4
 #define BOARD_SIZE BOARD_SIZEW * BOARD_SIZEH
 
-typedef int Cell;
+#include "colors.h"
+typedef struct {
+	int num;
+	Color color;
+} Cell;
 #define CELL(n) n
 #define CELL_EMPTY 0
 

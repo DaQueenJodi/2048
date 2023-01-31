@@ -1,4 +1,4 @@
-SRCS    := main.c util.c board.c
+SRCS    := main.c util.c board.c tui.c
 CFLAGS  := -Wextra -Wall -Wpedantic -ggdb
 LDFLAGS := -lm
 BIN     := 2048

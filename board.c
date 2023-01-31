@@ -32,7 +32,6 @@ void board_spawn_tile(Board *b) {
 #include <assert.h>
 #include <math.h>
 #define MAX_CELL_LEN 4
-char *colors[] = {"\033[100m", "\033[103m"};
 void board_print(Board *b)
 {
 	for (size_t y = 0; y < BOARD_SIZEH; y++) {
@@ -48,8 +47,7 @@ void board_print(Board *b)
 			for (size_t i = i_len; i < MAX_CELL_LEN; i++) {
 				str[i] = ' ';
 		}
-		char *color = c == CELL_EMPTY  ? "\033[0m" : colors[(size_t)log2(c) - 1];
-		printf("%s%s %s", color ,str, "\033[0m"); 
+		printf("%s",str); 
 		}
 		putchar('\n');
 	}
