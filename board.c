@@ -52,61 +52,46 @@ void board_print(Board *b)
 		putchar('\n');
 	}
 }
-#include <stdbool.h>
-static inline void move(Board *b, Point dest, Point src)
-{
-	b->cells[dest.x][dest.y] += b->cells[src.x][src.y];
-	b->cells[src.x][src.y] = CELL_EMPTY;
-}
 
+static bool combined_yet;
+#include <stdbool.h>
+static inline bool move(Board *b, Point dest, Point src)
+{
+	Cell sc = b->cells[src.x][src.y];
+	Cell dc = b->cells[dest.x][dest.y];
+	bool should_move = false;
+	if (dc == CELL_EMPTY) should_move = true;
+	else if (dc == sc && !combined_yet) { combined_yet = true; should_move = true; }
+	if (should_move) {
+		b->cells[dest.x][dest.y] += b->cells[src.x][src.y];
+		b->cells[src.x][src.y] = CELL_EMPTY;
+	}
+	return should_move;
+}
 static bool move_left(Board *b, Point p) {
 	if (p.x == 0) return false;
 	Point lp = POINT(p.x - 1, p.y); 
-	Cell cc = b->cells[p.x][p.y];
-	Cell lc = b->cells[lp.x][lp.y];
-	if (lc == CELL_EMPTY || lc == cc) {
-		move(b, lp, p);
-		return true;
-	}
-	return false;
+	return move(b, lp, p);
 }
 static bool move_right(Board *b, Point p) {
 	if (p.x == BOARD_SIZEW - 1) return false;
   Point rp = POINT(p.x + 1, p.y);
-	Cell cc = b->cells[p.x][p.y];
-	Cell rc = b->cells[rp.x][rp.y];
-	if (rc == CELL_EMPTY || rc == cc) {
-		move(b, rp, p);
-		return true;
-	}
-	return false;
+	return move(b, rp, p);
 }
 
 static bool move_up(Board *b, Point p) {
 	if (p.y == 0) return false;
 	Point up = POINT(p.x, p.y - 1);
-	Cell cc = b->cells[p.x][p.y];
-	Cell uc = b->cells[up.x][up.y];
-	if (uc == CELL_EMPTY || uc == cc) {
-		move(b, up, p);
-		return true;
-	}
-	return false;
+	return move(b, up, p);
 }
 static bool move_down(Board *b, Point p) {
 	if (p.y == BOARD_SIZEH - 1) return false;
 	Point dp = POINT(p.x, p.y + 1);
-	Cell cc = b->cells[p.x][p.y];
-	Cell dc = b->cells[dp.x][dp.y];
-	if (dc == 0 || dc == cc) {
-		move(b, dp, p);
-		return true;
-	}
-	return false;
+	return move(b, dp, p);
 }
 
 
-void board_move(Board *b, Direction dir)
+bool board_move(Board *b, Direction dir)
 {
 	bool (*movefunc)(Board *, Point) = NULL;
 	switch (dir) {
@@ -125,7 +110,8 @@ void board_move(Board *b, Direction dir)
 		default:
 			assert(0 && "unreachable");
 	}
-
+	combined_yet = false;
+	bool first_turn = true;
 	bool moved[BOARD_SIZE]; // just make sure theres something
 	size_t moved_i = 0;
 	while (true) {
@@ -133,7 +119,8 @@ void board_move(Board *b, Direction dir)
 		for (size_t i = 0; i < moved_i; i++) {
 			if (moved[i]) done = false;
 		}
-		if (done) return;
+		// if its the first turn, return did not move, otherwise return that you moved
+		if (done) return first_turn ? false : true;
 		moved_i = 0;
 		for (size_t y = 0; y < BOARD_SIZEH; y++) {
 			for (size_t x = 0; x < BOARD_SIZEW; x++) {
@@ -142,5 +129,6 @@ void board_move(Board *b, Direction dir)
 				moved[moved_i++] = movefunc(b, p);
 			}
 		}
+		first_turn = false;
 	}
 }

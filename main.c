@@ -1,16 +1,18 @@
 #include <stdio.h>
 #include "board.h"
+#include "tui.h"
 #include <stdlib.h>
 #include <time.h>
 #include <stdbool.h>
 int main(void) {
+	tui_setup();
 	srand(time(NULL));
 	Board *b = board_new();
 	board_spawn_tile(b);
 	bool quit = false;
 	while (!quit) {
 		board_spawn_tile(b);
-		board_print(b);
+		tui_draw_board(b);
 		Direction dir;		
 		while (true) {
 			char c = getchar();
@@ -28,14 +30,14 @@ int main(void) {
 					dir = MOVE_RIGHT;
 					break;
 				case 'q':
+					tui_cleanup();
 					return 0;
 				default:
 					dir = 0xFF;
 			}
-			if (dir != 0xFF) break;
+			if (dir != 0xFF && board_move(b, dir)) break;
 			else continue;
 		}
-		board_move(b, dir);
 	}
 
 	return 0;

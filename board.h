@@ -1,14 +1,12 @@
 #ifndef BOARD_H
+#define BOARD_H
 
 #define BOARD_SIZEW 4
 #define BOARD_SIZEH 4
 #define BOARD_SIZE BOARD_SIZEW * BOARD_SIZEH
 
 #include "colors.h"
-typedef struct {
-	int num;
-	Color color;
-} Cell;
+typedef int Cell;
 #define CELL(n) n
 #define CELL_EMPTY 0
 
@@ -27,7 +25,7 @@ typedef enum {
 	MOVE_LEFT,
 	MOVE_RIGHT
 } Direction;
-
-void board_move(Board *b, Direction dir);
+#include <stdbool.h>
+bool board_move(Board *b, Direction dir);
 void board_print(Board *b);
 #endif // BOARD_H
