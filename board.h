@@ -5,14 +5,16 @@
 #define BOARD_SIZEH 4
 #define BOARD_SIZE BOARD_SIZEW * BOARD_SIZEH
 
-#include "colors.h"
 typedef int Cell;
 #define CELL(n) n
 #define CELL_EMPTY 0
-
+typedef struct {
+	long num;
+	long last_add;
+} Score;
 typedef struct {
 	Cell cells[BOARD_SIZEH][BOARD_SIZEW];
-	long score;
+	Score score;
 } Board;
 
 Board *board_new(void);

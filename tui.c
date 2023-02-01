@@ -6,6 +6,7 @@ typedef struct {
 	size_t len;
 	char *buff;
 } DynBuffer;
+
 #include <stdlib.h>
 DynBuffer *dyn_buffer_new(void) {
 	DynBuffer *db = malloc(sizeof(DynBuffer));
@@ -38,33 +39,16 @@ pthread_mutex_t timer_mutex;
 #include <sys/time.h>
 #include <time.h>
 #include <pthread.h>
-
-struct timeval elapsed_time;
-static void *update_timer(void *ignore) {
-struct timeval current_time;
-	(void)ignore;
-	struct timeval initial_time;
-	gettimeofday(&initial_time, NULL);
-	struct timespec sleep_ammount = {0, 100 * 1000}; // 100 miliseconds
-	while (true) {
-		gettimeofday(&current_time, NULL);
-		pthread_mutex_lock(&timer_mutex);
-		elapsed_time.tv_usec = current_time.tv_usec - initial_time.tv_usec;
-		elapsed_time.tv_sec = current_time.tv_sec - initial_time.tv_sec;
-		pthread_mutex_unlock(&timer_mutex);
-		nanosleep(&sleep_ammount, NULL);
-	}
-}
-#include <pthread.h>
 #include <stdio.h>
+long elapsed_seconds;
 #define MAX_TIME_LEN 69
 static void draw_timer(DynBuffer *screen) {
-	struct timeval time;
+	long seconds;
 	pthread_mutex_lock(&timer_mutex);
-	time = elapsed_time;
+	seconds = elapsed_seconds;
 	pthread_mutex_unlock(&timer_mutex);
 	char time_str[MAX_TIME_LEN];
-	size_t str_len = snprintf(time_str, MAX_TIME_LEN, "time: %zu", time.tv_sec);
+	size_t str_len = snprintf(time_str, MAX_TIME_LEN, "time: %zu", seconds);
 	dyn_buffer_append(screen, time_str, str_len);
 	dyn_buffer_append(screen, "\r\n", 2);
 }
@@ -148,18 +132,25 @@ void tui_draw_board(DynBuffer *screen, Board *b) {
 }
 #define MAX_SCORE_LEN 69
 static void draw_score(DynBuffer *screen, Board *b) {
-	long score;
+	Score score;
 	pthread_mutex_lock(&board_mutex);
 	score = b->score;
 	pthread_mutex_unlock(&board_mutex);
 	char score_str[MAX_SCORE_LEN];
-	size_t score_len = snprintf(score_str, MAX_SCORE_LEN, "score: %ld", score);
+	size_t score_len = snprintf(score_str, MAX_SCORE_LEN, "score: %ld(+%ld)", score.num, score.last_add);
 	dyn_buffer_append(screen, score_str, score_len);
 	dyn_buffer_append(screen, "\r\n\r\n", 4);
 }
 static void *update_tui(void *board_ptr) {
+	struct timeval initial_time;
+	struct timeval current_time;
+	gettimeofday(&initial_time, NULL);
 	Board *b = (Board *)board_ptr;
 	while (!quit) {
+		gettimeofday(&current_time, NULL);
+		pthread_mutex_lock(&timer_mutex);
+		elapsed_seconds = current_time.tv_sec - initial_time.tv_sec;
+		pthread_mutex_unlock(&timer_mutex);
 		DynBuffer *screen = dyn_buffer_new();
 		clear_screen(screen);
 		draw_timer(screen);
@@ -177,7 +168,6 @@ struct termios old_termios;
 void tui_setup(Board *b) {
 		// set up timer
 		pthread_t ignore;
-		pthread_create(&ignore, NULL, update_timer, NULL);
 		pthread_create(&ignore, NULL, update_tui, b);
 		pthread_mutex_init(&timer_mutex, NULL);
 		pthread_mutex_init(&quit_mutex, NULL);

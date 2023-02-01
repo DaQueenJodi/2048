@@ -13,7 +13,7 @@ void board_free(Board *b)
 Board *board_new(void) {
 	Board *b = malloc(sizeof(Board));
 	memset(b->cells, 0, sizeof(b->cells));
-	b->score = 0;
+	b->score = (Score){.num = 0, .last_add = 0};
 	return b;
 }
 
@@ -59,7 +59,8 @@ static bool move(Board *b, Point dest, Point src, bool dry) {
 		}
 		if (!is_combined) {
 			should_move = true;
-			b->score += sc + dc;
+			b->score.num += sc + dc;
+			b->score.last_add = sc + dc;
 			if (!dry) combined[num_combined++] = dest;
 		}
 	}
