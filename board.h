@@ -27,5 +27,10 @@ typedef enum {
 } Direction;
 #include <stdbool.h>
 bool board_move(Board *b, Direction dir);
-void board_print(Board *b);
+typedef enum {
+	BOARD_LOSS,
+	BOARD_WIN,
+	BOARD_NADDA,
+} BoardWinStatus;
+BoardWinStatus board_check_win(Board *b);
 #endif // BOARD_H

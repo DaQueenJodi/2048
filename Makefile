@@ -11,6 +11,7 @@ $(BIN): $(SRCS)
 
 clean:
 	rm $(BIN)
-
+debug:
+	gdb $(BIN)
 run:
 	./$(BIN)

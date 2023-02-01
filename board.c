@@ -31,38 +31,30 @@ void board_spawn_tile(Board *b) {
 #include <stdio.h>
 #include <assert.h>
 #include <math.h>
-#define MAX_CELL_LEN 4
-void board_print(Board *b)
-{
-	for (size_t y = 0; y < BOARD_SIZEH; y++) {
-		for (size_t x = 0; x < BOARD_SIZEW; x++) {
-			char str[MAX_CELL_LEN];
-			size_t i_len;
-			Cell c = b->cells[x][y];
-			if (c == CELL_EMPTY) {
-				i_len = 1;
-				str[0] = '.';
-			} else i_len = snprintf(str, sizeof(str), "%d", c);
-			assert(i_len <= MAX_CELL_LEN);
-			for (size_t i = i_len; i < MAX_CELL_LEN; i++) {
-				str[i] = ' ';
-		}
-		printf("%s",str); 
-		}
-		putchar('\n');
-	}
-}
+static Point combined[BOARD_SIZE] = {0};
+static size_t num_combined = 0;
 
-static bool combined_yet;
 #include <stdbool.h>
-static inline bool move(Board *b, Point dest, Point src)
+static bool move(Board *b, Point dest, Point src, bool dry)
 {
 	Cell sc = b->cells[src.x][src.y];
 	Cell dc = b->cells[dest.x][dest.y];
 	bool should_move = false;
 	if (dc == CELL_EMPTY) should_move = true;
-	else if (dc == sc && !combined_yet) { combined_yet = true; should_move = true; }
-	if (should_move) {
+	else if (sc == dc) {
+		bool is_combined = false;
+		for (size_t i = 0; i < num_combined; i++) {
+			if (point_cmp(combined[i], src)) {
+				is_combined = true;
+				break;
+			}
+		}
+		if (!is_combined) {
+			should_move = true;
+			if (!dry) combined[num_combined++] = dest;
+		}
+	}
+	if (should_move && !dry) {
 		b->cells[dest.x][dest.y] += b->cells[src.x][src.y];
 		b->cells[src.x][src.y] = CELL_EMPTY;
 	}
@@ -71,23 +63,23 @@ static inline bool move(Board *b, Point dest, Point src)
 static bool move_left(Board *b, Point p) {
 	if (p.x == 0) return false;
 	Point lp = POINT(p.x - 1, p.y); 
-	return move(b, lp, p);
+	return move(b, lp, p, false);
 }
 static bool move_right(Board *b, Point p) {
 	if (p.x == BOARD_SIZEW - 1) return false;
   Point rp = POINT(p.x + 1, p.y);
-	return move(b, rp, p);
+	return move(b, rp, p, false);
 }
 
 static bool move_up(Board *b, Point p) {
 	if (p.y == 0) return false;
 	Point up = POINT(p.x, p.y - 1);
-	return move(b, up, p);
+	return move(b, up, p, false);
 }
 static bool move_down(Board *b, Point p) {
 	if (p.y == BOARD_SIZEH - 1) return false;
 	Point dp = POINT(p.x, p.y + 1);
-	return move(b, dp, p);
+	return move(b, dp, p, false);
 }
 
 
@@ -110,25 +102,48 @@ bool board_move(Board *b, Direction dir)
 		default:
 			assert(0 && "unreachable");
 	}
-	combined_yet = false;
-	bool first_turn = true;
+	num_combined = 0;
+	bool has_moved = false;
 	bool moved[BOARD_SIZE]; // just make sure theres something
 	size_t moved_i = 0;
 	while (true) {
-		bool done = (bool)moved_i; // if moved_i is 0, false by default
+		bool done = has_moved ? true : false;
 		for (size_t i = 0; i < moved_i; i++) {
 			if (moved[i]) done = false;
 		}
 		// if its the first turn, return did not move, otherwise return that you moved
-		if (done) return first_turn ? false : true;
+		if (done) return moved_i > 0 ? true : false;
 		moved_i = 0;
 		for (size_t y = 0; y < BOARD_SIZEH; y++) {
 			for (size_t x = 0; x < BOARD_SIZEW; x++) {
 				Point p = POINT(x, y);
 				if (b->cells[p.x][p.y] == CELL_EMPTY) continue;
+				bool is_combined = false;
+				for (size_t i = 0; i < num_combined; i++) {
+					if (point_cmp(combined[i], p)) { 
+						is_combined = true;
+						break; 
+					}
+					if (is_combined) continue;
+				}
 				moved[moved_i++] = movefunc(b, p);
 			}
 		}
-		first_turn = false;
+		has_moved = true;
 	}
+}
+
+
+BoardWinStatus board_check_win(Board *b) {
+	bool has_empty = false;
+	for (size_t y = 0; y < BOARD_SIZEH; y++) {
+		for (size_t x = 0; x < BOARD_SIZEW; x++) {
+			Cell c = b->cells[x][y];
+			if (c == CELL_EMPTY) has_empty = true;
+			else if (c == 2048) return BOARD_WIN;
+		}
+	}
+	// TODO: check if there are available moves
+	if (!has_empty) return BOARD_LOSS;
+	return BOARD_NADDA;
 }

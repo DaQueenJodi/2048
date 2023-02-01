@@ -13,6 +13,13 @@ int main(void) {
 	while (!quit) {
 		board_spawn_tile(b);
 		tui_draw_board(b);
+		BoardWinStatus status = board_check_win(b);
+		if (status != BOARD_NADDA) {
+			tui_cleanup();
+			quit = true;
+		}
+		else if (status == BOARD_LOSS) puts("you lost");
+		else puts("you won");
 		Direction dir;		
 		while (true) {
 			char c = getchar();
@@ -40,5 +47,6 @@ int main(void) {
 		}
 	}
 
+	tui_cleanup();
 	return 0;
 }

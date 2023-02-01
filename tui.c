@@ -39,7 +39,7 @@ static void clear_screen(DynBuffer *screen) {
 static size_t cell_to_color_str(Cell c, char* res) {
 	switch (c) {
 		case CELL_EMPTY:
-			return 0;
+			RET_STR("\033[2m" "\033[47m");
 		case 2:
 			RET_STR("\033[97m" "\033[41m");
 		case 4:
@@ -73,7 +73,9 @@ static size_t cell_to_color_str(Cell c, char* res) {
 #include <unistd.h>
 static char *cell_to_str(Cell c) {
 	char cell_str[MAX_CELL_LEN];
-	size_t s_len = snprintf(cell_str, MAX_CELL_LEN, "%d", c);
+	size_t s_len;
+	if (c == CELL_EMPTY) s_len = 0;
+	else s_len = snprintf(cell_str, MAX_CELL_LEN, "%d", c);
 	assert(s_len <= MAX_CELL_LEN);
 	size_t lpadnum = floor((MAX_CELL_LEN - s_len) / 2);
 	size_t rpadnum = MAX_CELL_LEN - s_len -  lpadnum;
