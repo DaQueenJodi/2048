@@ -3,6 +3,8 @@
 #include <string.h>
 #include "util.h"
 
+#include "globals.h"
+
 void board_free(Board *b) 
 {
 	free(b);
@@ -11,6 +13,7 @@ void board_free(Board *b)
 Board *board_new(void) {
 	Board *b = malloc(sizeof(Board));
 	memset(b->cells, 0, sizeof(b->cells));
+	b->score = 0;
 	return b;
 }
 
@@ -19,13 +22,17 @@ void board_spawn_tile(Board *b) {
 	size_t len = 0;
 	for (size_t y = 0; y < BOARD_SIZEH; y++) {
 		for (size_t x = 0; x < BOARD_SIZEW; x++) {
+			pthread_mutex_lock(&board_mutex);
 			if (b->cells[x][y] == CELL_EMPTY)
 				points[len++] = POINT(x, y);
+			pthread_mutex_unlock(&board_mutex);
 		}
 	}
-	size_t index = rand_range(0, len - 1);
+	size_t index = len > 1 ? rand_range(0, len - 1): 0;
 	Point p = points[index];
+	pthread_mutex_lock(&board_mutex);
 	b->cells[p.x][p.y] = CELL(2);
+	pthread_mutex_unlock(&board_mutex);
 }
 
 #include <stdio.h>
@@ -35,10 +42,11 @@ static Point combined[BOARD_SIZE] = {0};
 static size_t num_combined = 0;
 
 #include <stdbool.h>
-static bool move(Board *b, Point dest, Point src, bool dry)
-{
+static bool move(Board *b, Point dest, Point src, bool dry) {
+	pthread_mutex_lock(&board_mutex);
 	Cell sc = b->cells[src.x][src.y];
 	Cell dc = b->cells[dest.x][dest.y];
+	pthread_mutex_unlock(&board_mutex);
 	bool should_move = false;
 	if (dc == CELL_EMPTY) should_move = true;
 	else if (sc == dc) {
@@ -51,12 +59,15 @@ static bool move(Board *b, Point dest, Point src, bool dry)
 		}
 		if (!is_combined) {
 			should_move = true;
+			b->score += sc + dc;
 			if (!dry) combined[num_combined++] = dest;
 		}
 	}
 	if (should_move && !dry) {
+		pthread_mutex_lock(&board_mutex);
 		b->cells[dest.x][dest.y] += b->cells[src.x][src.y];
 		b->cells[src.x][src.y] = CELL_EMPTY;
+		pthread_mutex_unlock(&board_mutex);
 	}
 	return should_move;
 }
@@ -117,7 +128,10 @@ bool board_move(Board *b, Direction dir)
 		for (size_t y = 0; y < BOARD_SIZEH; y++) {
 			for (size_t x = 0; x < BOARD_SIZEW; x++) {
 				Point p = POINT(x, y);
-				if (b->cells[p.x][p.y] == CELL_EMPTY) continue;
+				pthread_mutex_lock(&board_mutex);
+				Cell c = b->cells[p.x][p.y];
+				pthread_mutex_unlock(&board_mutex);
+				if (c == CELL_EMPTY) continue;
 				bool is_combined = false;
 				for (size_t i = 0; i < num_combined; i++) {
 					if (point_cmp(combined[i], p)) { 
@@ -138,7 +152,9 @@ BoardWinStatus board_check_win(Board *b) {
 	bool has_empty = false;
 	for (size_t y = 0; y < BOARD_SIZEH; y++) {
 		for (size_t x = 0; x < BOARD_SIZEW; x++) {
+			pthread_mutex_lock(&board_mutex);
 			Cell c = b->cells[x][y];
+			pthread_mutex_unlock(&board_mutex);
 			if (c == CELL_EMPTY) has_empty = true;
 			else if (c == 2048) return BOARD_WIN;
 		}

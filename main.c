@@ -5,21 +5,14 @@
 #include <time.h>
 #include <stdbool.h>
 int main(void) {
-	tui_setup();
-	srand(time(NULL));
 	Board *b = board_new();
+	tui_setup(b);
+	atexit(tui_cleanup);
+	srand(time(NULL));
 	board_spawn_tile(b);
 	bool quit = false;
 	while (!quit) {
 		board_spawn_tile(b);
-		tui_draw_board(b);
-		BoardWinStatus status = board_check_win(b);
-		if (status != BOARD_NADDA) {
-			tui_cleanup();
-			quit = true;
-		}
-		else if (status == BOARD_LOSS) puts("you lost");
-		else puts("you won");
 		Direction dir;		
 		while (true) {
 			char c = getchar();
@@ -37,7 +30,6 @@ int main(void) {
 					dir = MOVE_RIGHT;
 					break;
 				case 'q':
-					tui_cleanup();
 					return 0;
 				default:
 					dir = 0xFF;
@@ -46,7 +38,5 @@ int main(void) {
 			else continue;
 		}
 	}
-
-	tui_cleanup();
 	return 0;
 }

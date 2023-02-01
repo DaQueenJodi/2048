@@ -3,8 +3,7 @@
 
 #include "board.h"
 
-void tui_draw_board(Board *b);
-void tui_setup(void);
+void tui_setup(Board *b);
 void tui_cleanup(void);
 
 #endif // TUI_H

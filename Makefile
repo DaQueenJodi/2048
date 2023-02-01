@@ -1,6 +1,6 @@
-SRCS    := main.c util.c board.c tui.c
+SRCS    := main.c util.c board.c tui.c globals.c
 CFLAGS  := -Wextra -Wall -Wpedantic -ggdb
-LDFLAGS := -lm
+LDFLAGS := -lm -lpthread
 BIN     := 2048
 CC		  := clang
 .PHONY: clean run all
@@ -11,6 +11,7 @@ $(BIN): $(SRCS)
 
 clean:
 	rm $(BIN)
+dbg: debug
 debug:
 	gdb $(BIN)
 run:

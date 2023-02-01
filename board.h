@@ -12,6 +12,7 @@ typedef int Cell;
 
 typedef struct {
 	Cell cells[BOARD_SIZEH][BOARD_SIZEW];
+	long score;
 } Board;
 
 Board *board_new(void);
